@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M365 PowerShell Generator | מחולל פקודות PowerShell</title>
+    <meta name="description"
+        content="ממשק מתקדם ליצירת פקודות PowerShell לניהול Microsoft 365 - הרשאות יומן, תיבות דואר, רישיונות ועוד">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ===== CSS Reset & Variables ===== */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: rgba(17, 24, 39, 0.7);
+            --bg-glass: rgba(255, 255, 255, 0.04);
+            --bg-glass-hover: rgba(255, 255, 255, 0.08);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-glass-active: rgba(99, 102, 241, 0.4);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-primary: #6366f1;
+            --accent-primary-light: #818cf8;
+            --accent-glow: rgba(99, 102, 241, 0.25);
+            --accent-success: #10b981;
+            --accent-success-glow: rgba(16, 185, 129, 0.25);
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 40px var(--accent-glow);
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.25s ease;
+            --transition-slow: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ===== Animated Background ===== */
+        .bg-effects {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bg-effects .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.15;
+            animation: orbFloat 20s ease-in-out infinite;
+        }
+
+        .bg-effects .orb:nth-child(1) {
+            width: 600px;
+            height: 600px;
+            background: var(--accent-primary);
+            top: -200px;
+            right: -100px;
+            animation-delay: 0s;
+        }
+
+        .bg-effects .orb:nth-child(2) {
+            width: 400px;
+            height: 400px;
+            background: #8b5cf6;
+            bottom: -100px;
+            left: -100px;
+            animation-delay: -7s;
+        }
+
+        .bg-effects .orb:nth-child(3) {
+            width: 300px;
+            height: 300px;
+            background: #06b6d4;
+            top: 50%;
+            left: 50%;
+            animation-delay: -14s;
+            opacity: 0.08;
+        }
+
+        @keyframes orbFloat {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(40px, -30px) scale(1.05);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.95);
+            }
+        }
+
+        /* ===== Layout ===== */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            grid-template-rows: auto 1fr;
+            min-height: 100vh;
+            gap: 0;
+        }
+
+        /* ===== Header ===== */
+        .header {
+            grid-column: 1 / -1;
+            padding: 20px 32px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-glass);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .header-logo .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .header-logo h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-logo .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .header-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: 100px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .header-badge .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-success);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 var(--accent-success-glow);
+            }
+
+            50% {
+                opacity: 0.7;
+                box-shadow: 0 0 0 8px transparent;
+            }
+        }
+
+        /* ===== Sidebar ===== */
+        .sidebar {
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid var(--border-glass);
+            padding: 24px 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .sidebar-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            padding: 0 12px 12px;
+            border-bottom: 1px solid var(--border-glass);
+            margin-bottom: 8px;
+        }
+
+        .category-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            text-align: right;
+            width: 100%;
+        }
+
+        .category-btn .cat-icon {
+            font-size: 1.2rem;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            background: var(--bg-glass);
+            flex-shrink: 0;
+            transition: all var(--transition-normal);
+        }
+
+        .category-btn:hover {
+            background: var(--bg-glass-hover);
+            color: var(--text-primary);
+            border-color: var(--border-glass);
+        }
+
+        .category-btn:hover .cat-icon {
+            background: var(--bg-glass-hover);
+        }
+
+        .category-btn.active {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--border-glass-active);
+            color: var(--accent-primary-light);
+            box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.05);
+        }
+
+        .category-btn.active .cat-icon {
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .category-btn .cat-count {
+            margin-right: auto;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 100px;
+            background: var(--bg-glass);
+            color: var(--text-muted);
+        }
+
+        /* ===== Main Content ===== */
+        .main-content {
+            padding: 32px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* ===== Welcome Screen ===== */
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 80px 40px;
+            animation: fadeInUp 0.6s var(--transition-slow);
+        }
+
+        .welcome-screen .big-icon {
+            font-size: 4rem;
+            margin-bottom: 24px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .welcome-screen h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-screen p {
+            color: var(--text-secondary);
+            max-width: 460px;
+            font-size: 1rem;
+        }
+
+        /* ===== Operations Grid ===== */
+        .operations-section {
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .section-header .sec-icon {
+            font-size: 1.5rem;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .section-header h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .section-header .sec-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .ops-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 14px;
+        }
+
+        .op-card {
+            padding: 20px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .op-card:hover {
+            background: var(--bg-glass-hover);
+            border-color: var(--border-glass-active);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md), 0 0 30px rgba(99, 102, 241, 0.08);
+        }
+
+        .op-card.active {
+            background: rgba(99, 102, 241, 0.08);
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .op-card .op-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .op-card .op-cmd {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--accent-primary-light);
+            opacity: 0.8;
+        }
+
+        /* ===== Form Panel ===== */
+        .form-panel {
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-xl);
+            padding: 28px;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .form-panel .form-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .form-panel .form-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: all var(--transition-fast);
+            outline: none;
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .form-group select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8.825L1.175 4 2.238 2.938 6 6.7 9.763 2.937 10.825 4z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 14px center;
+            padding-left: 36px;
+        }
+
+        .form-group .hint {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        /* ===== Output Panel ===== */
+        .output-panel {
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .output-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .output-header .output-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .output-header .output-label .ps-badge {
+            padding: 3px 10px;
+            background: rgba(99, 102, 241, 0.15);
+            border-radius: 100px;
+            font-size: 0.7rem;
+            color: var(--accent-primary-light);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .copy-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+
+        .copy-btn.copied {
+            background: linear-gradient(135deg, var(--accent-success), #059669);
+        }
+
+        .output-code {
+            padding: 24px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.88rem;
+            line-height: 1.8;
+            color: var(--accent-primary-light);
+            white-space: pre-wrap;
+            word-break: break-all;
+            min-height: 60px;
+            direction: ltr;
+            text-align: left;
+        }
+
+        .output-code .cmd-name {
+            color: #c084fc;
+        }
+
+        .output-code .param-name {
+            color: #67e8f9;
+        }
+
+        .output-code .param-value {
+            color: #fbbf24;
+        }
+
+        .output-code .comment {
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .output-placeholder {
+            padding: 40px 24px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* ===== Bulk Mailbox List ===== */
+        .bulk-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .bulk-list-label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .bulk-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: fadeInUp 0.25s ease;
+        }
+
+        .bulk-row .row-num {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(99, 102, 241, 0.12);
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--accent-primary-light);
+            flex-shrink: 0;
+        }
+
+        .bulk-row input {
+            flex: 1;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: all var(--transition-fast);
+            outline: none;
+        }
+
+        .bulk-row input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .bulk-row input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .bulk-remove-btn {
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: var(--radius-sm);
+            color: var(--accent-danger);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            flex-shrink: 0;
+        }
+
+        .bulk-remove-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .bulk-add-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px dashed rgba(99, 102, 241, 0.3);
+            border-radius: var(--radius-sm);
+            color: var(--accent-primary-light);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+
+        .bulk-add-btn:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: rgba(99, 102, 241, 0.5);
+        }
+
+        .bulk-counter {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        /* ===== Animations ===== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== Scrollbar ===== */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 12px;
+                border-left: none;
+                border-bottom: 1px solid var(--border-glass);
+            }
+
+            .sidebar-title {
+                display: none;
+            }
+
+            .category-btn {
+                white-space: nowrap;
+                padding: 10px 14px;
+                font-size: 0.82rem;
+            }
+
+            .category-btn .cat-count {
+                display: none;
+            }
+
+            .main-content {
+                padding: 20px 16px;
+            }
+
+            .header {
+                padding: 16px 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 14px 28px;
+            background: var(--accent-success);
+            color: white;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.9rem;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Background Effects -->
+    <div class="bg-effects">
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">✓ הפקודה הועתקה ללוח!</div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-logo">
+                <div class="logo-icon">⚡</div>
+                <div>
+                    <h1>M365 PowerShell Generator</h1>
+                    <div class="subtitle">מחולל פקודות לניהול Microsoft 365</div>
+                </div>
+            </div>
+            <div class="header-badge">
+                <div class="dot"></div>
+                <span>גרסה 1.0</span>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-title">קטגוריות</div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="big-icon">🚀</div>
+                <h2>בחר קטגוריה כדי להתחיל</h2>
+                <p>בחר קטגוריית ניהול מהתפריט בצד ימין כדי לראות את הפקודות הזמינות ולהתחיל ליצור פקודות PowerShell</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ===== Data Model =====
+        const categories = [
+            {
+                id: 'connect',
+                name: 'התחברות',
+                icon: '🔌',
+                desc: 'התחברות לשירותי M365',
+                operations: [
+                    {
+                        id: 'connect-exo',
+                        name: 'Exchange Online',
+                        cmd: 'Connect-ExchangeOnline',
+                        fields: [
+                            { id: 'upn', label: 'שם משתמש (UPN)', placeholder: 'admin@domain.com', required: true }
+                        ],
+                        generate: (v) => `Connect-ExchangeOnline -UserPrincipalName "${v.upn}"`
+                    },
+                    {
+                        id: 'connect-mg',
+                        name: 'Microsoft Graph',
+                        cmd: 'Connect-MgGraph',
+                        fields: [
+                            { id: 'scopes', label: 'הרשאות (Scopes)', placeholder: 'User.Read.All, Group.ReadWrite.All', required: false, hint: 'הזן הרשאות מופרדות בפסיק' }
+                        ],
+                        generate: (v) => v.scopes
+                            ? `Connect-MgGraph -Scopes "${v.scopes}"`
+                            : `Connect-MgGraph`
+                    },
+                    {
+                        id: 'connect-azuread',
+                        name: 'Azure AD',
+                        cmd: 'Connect-AzureAD',
+                        fields: [],
+                        generate: () => `Connect-AzureAD`
+                    },
+                    {
+                        id: 'connect-msol',
+                        name: 'MSOnline',
+                        cmd: 'Connect-MsolService',
+                        fields: [],
+                        generate: () => `Connect-MsolService`
+                    }
+                ]
+            },
+            {
+                id: 'calendar',
+                name: 'הרשאות יומן',
+                icon: '📅',
+                desc: 'ניהול הרשאות גישה ליומנים',
+                operations: [
+                    {
+                        id: 'cal-add',
+                        name: 'הוספת הרשאה',
+                        cmd: 'Add-MailboxFolderPermission',
+                        fields: [
+                            { id: 'mailbox', label: 'תיבת דואר (בעל היומן)', placeholder: 'user@domain.com', required: true },
+                            { id: 'user', label: 'משתמש מורשה', placeholder: 'viewer@domain.com', required: true },
+                            {
+                                id: 'access', label: 'רמת הרשאה', type: 'select', required: true, options: [
+                                    { value: '', label: '-- בחר --' },
+                                    { value: 'Reviewer', label: 'Reviewer - צפייה בלבד' },
+                                    { value: 'Editor', label: 'Editor - עריכה' },
+                                    { value: 'Author', label: 'Author - יצירה ועריכת פריטים שלו' },
+                                    { value: 'PublishingEditor', label: 'Publishing Editor - עריכה + תיקיות משנה' },
+                                    { value: 'Owner', label: 'Owner - בעלות מלאה' },
+                                    { value: 'AvailabilityOnly', label: 'AvailabilityOnly - פנוי/תפוס בלבד' },
+                                    { value: 'LimitedDetails', label: 'LimitedDetails - נושא ומיקום' }
+                                ]
+                            }
+                        ],
+                        generate: (v) => `Add-MailboxFolderPermission -Identity "${v.mailbox}:\\Calendar" -User "${v.user}" -AccessRights ${v.access}`
+                    },
+                    {
+                        id: 'cal-set',
+                        name: 'עדכון הרשאה',
+                        cmd: 'Set-MailboxFolderPermission',
+                        fields: [
+                            { id: 'mailbox', label: 'תיבת דואר (בעל היומן)', placeholder: 'user@domain.com', required: true },
+                            { id: 'user', label: 'משתמש מורשה', placeholder: 'viewer@domain.com', required: true },
+                            {
+                                id: 'access', label: 'רמת הרשאה חדשה', type: 'select', required: true, options: [
+                                    { value: '', label: '-- בחר --' },
+                                    { value: 'Reviewer', label: 'Reviewer - צפייה בלבד' },
+                                    { value: 'Editor', label: 'Editor - עריכה' },
+                                    { value: 'Author', label: 'Author - יצירה ועריכת פריטים שלו' },
+                                    { value: 'PublishingEditor', label: 'Publishing Editor - עריכה + תיקיות משנה' },
+                                    { value: 'Owner', label: 'Owner - בעלות מלאה' },
+                                    { value: 'AvailabilityOnly', label: 'AvailabilityOnly - פנוי/תפוס בלבד' },
+                                    { value: 'LimitedDetails', label: 'LimitedDetails - נושא ומיקום' }
+                                ]
+                            }
+                        ],
+                        generate: (v) => `Set-MailboxFolderPermission -Identity "${v.mailbox}:\\Calendar" -User "${v.user}" -AccessRights ${v.access}`
+                    },
+                    {
+                        id: 'cal-remove',
+                        name: 'הסרת הרשאה',
+                        cmd: 'Remove-MailboxFolderPermission',
+                        fields: [
+                            { id: 'mailbox', label: 'תיבת דואר (בעל היומן)', placeholder: 'user@domain.com', required: true },
+                            { id: 'user', label: 'משתמש להסרה', placeholder: 'viewer@domain.com', required: true }
+                        ],
+                        generate: (v) => `Remove-MailboxFolderPermission -Identity "${v.mailbox}:\\Calendar" -User "${v.user}" -Confirm:$false`
+                    },
+                    {
+                        id: 'cal-get',
+                        name: 'צפייה בהרשאות',
+                        cmd: 'Get-MailboxFolderPermission',
+                        fields: [
+                            { id: 'mailbox', label: 'תיבת דואר', placeholder: 'user@domain.com', required: true }
+                        ],
+                        generate: (v) => `Get-MailboxFolderPermission -Identity "${v.mailbox}:\\Calendar"`
+                    },
+                    {
+                        id: 'cal-bulk',
+                        name: 'הרשאה ליומנים מרובים',
+                        cmd: 'Add-MailboxFolderPermission (Bulk)',
+                        bulk: true,
+                        fields: [],
+                        generate: () => ''
+                    }
+                ]
+            },
+            {
+                id: 'mailbox-perms',
+                name: 'הרשאות תיבת דואר',
+                icon: '📬',
+                desc: 'Full Access, Send As, Send on Behalf',
+                operations: [
+                    {
+                        id: 'mbx-fullaccess-add',
+                        name: 'הוספת Full Access',
+                        cmd: 'Add-MailboxPermission',
+                        fields: [
+                            { id: 'mailbox', label: 'תיבת דואר', placeholder: 'target@domain.com', required: true },
+                            { id: 'user', label: 'משתמש מורשה', placeholder: 'admin@domain.com', required: true },
+                            {
+                                id: 'automapping', label: 'מיפוי אוטומטי', type: 'select', required: true, options: [
+                                    { value: '$true', label: 'כן - תופיע אוטומטית ב-Outlook' },
+                                    { value: '$false', label: 'לא - ידני בלבד' }
+                                ]
+                            }
+                        ],
+                        generate: (v) => `Add-MailboxPermission -Identity "${v.mailbox}" -User "${v.user}" -AccessRights FullAccess -AutoMapping ${v.automapping}`
+                    },
+                    {
+                        id: 'mbx-fullaccess-remove',
+                        name: 'הסרת Full Access',
+                        cmd: 'Remove-MailboxPermission',
+                        fields: [
+                            { id: 'mailbox', label: 'תיבת דואר', placeholder: 'target@domain.com', required: true },
+                            { id: 'user', label: 'משתמש להסרה', placeholder: 'admin@domain.com', required: true }
+                        ],
+                        generate: (v) => `Remove-MailboxPermission -Identity "${v.mailbox}" -User "${v.user}" -AccessRights FullAccess -Confirm:$false`
+                    },
+                    {
+                        id: 'mbx-sendas-add',
+                        name: 'הוספת Send As',
+                        cmd: 'Add-RecipientPermission',
+                        fields: [
+                            { id: 'mailbox', label: 'תיבת דואר (שליחה בשמה)', placeholder: 'shared@domain.com', required: true },
+                            { id: 'user', label: 'משתמש מורשה', placeholder: 'user@domain.com', required: true }
+                        ],
+                        generate: (v) => `Add-RecipientPermission -Identity "${v.mailbox}" -Trustee "${v.user}" -AccessRights SendAs -Confirm:$false`
+                    },
+                    {
+                        id: 'mbx-sendas-remove',
+                        name: 'הסרת Send As',
+                        cmd: 'Remove-RecipientPermission',
+                        fields: [
+                            { id: 'mailbox', label: 'תיבת דואר', placeholder: 'shared@domain.com', required: true },
+                            { id: 'user', label: 'משתמש להסרה', placeholder: 'user@domain.com', required: true }
+                        ],
+                        generate: (v) => `Remove-RecipientPermission -Identity "${v.mailbox}" -Trustee "${v.user}" -AccessRights SendAs -Confirm:$false`
+                    },
+                    {
+                        id: 'mbx-sendonbehalf',
+                        name: 'הוספת Send on Behalf',
+                        cmd: 'Set-Mailbox',
+                        fields: [
+                            { id: 'mailbox', label: 'תיבת דואר', placeholder: 'shared@domain.com', required: true },
+                            { id: 'user', label: 'משתמש מורשה', placeholder: 'user@domain.com', required: true }
+                        ],
+                        generate: (v) => `Set-Mailbox -Identity "${v.mailbox}" -GrantSendOnBehalfTo @{Add="${v.user}"}`
+                    },
+                    {
+                        id: 'mbx-get-perms',
+                        name: 'צפייה בהרשאות תיבה',
+                        cmd: 'Get-MailboxPermission',
+                        fields: [
+                            { id: 'mailbox', label: 'תיבת דואר', placeholder: 'user@domain.com', required: true }
+                        ],
+                        generate: (v) => `# Full Access permissions\nGet-MailboxPermission -Identity "${v.mailbox}" | Where-Object { $_.User -ne "NT AUTHORITY\\SELF" }\n\n# Send As permissions\nGet-RecipientPermission -Identity "${v.mailbox}" | Where-Object { $_.Trustee -ne "NT AUTHORITY\\SELF" }\n\n# Send on Behalf\nGet-Mailbox -Identity "${v.mailbox}" | Select-Object GrantSendOnBehalfTo`
+                    }
+                ]
+            },
+            {
+                id: 'shared-mailbox',
+                name: 'תיבת דואר משותפת',
+                icon: '📦',
+                desc: 'יצירה וניהול תיבות משותפות',
+                operations: [
+                    {
+                        id: 'shared-create',
+                        name: 'יצירת תיבה משותפת',
+                        cmd: 'New-Mailbox -Shared',
+                        fields: [
+                            { id: 'name', label: 'שם תצוגה', placeholder: 'מחלקת מכירות', required: true },
+                            { id: 'alias', label: 'כינוי (Alias)', placeholder: 'sales', required: true },
+                            { id: 'email', label: 'כתובת דואר', placeholder: 'sales@domain.com', required: true }
+                        ],
+                        generate: (v) => `New-Mailbox -Shared -Name "${v.name}" -Alias "${v.alias}" -PrimarySmtpAddress "${v.email}"`
+                    },
+                    {
+                        id: 'shared-add-member',
+                        name: 'הוספת חבר',
+                        cmd: 'Add-MailboxPermission',
+                        fields: [
+                            { id: 'mailbox', label: 'תיבה משותפת', placeholder: 'shared@domain.com', required: true },
+                            { id: 'user', label: 'משתמש להוספה', placeholder: 'user@domain.com', required: true },
+                            {
+                                id: 'sendas', label: 'הוסף גם Send As', type: 'select', required: true, options: [
+                                    { value: 'yes', label: 'כן' },
+                                    { value: 'no', label: 'לא' }
+                                ]
+                            }
+                        ],
+                        generate: (v) => {
+                            let cmd = `# הוספת Full Access\nAdd-MailboxPermission -Identity "${v.mailbox}" -User "${v.user}" -AccessRights FullAccess -AutoMapping $true`;
+                            if (v.sendas === 'yes') {
+                                cmd += `\n\n# הוספת Send As\nAdd-RecipientPermission -Identity "${v.mailbox}" -Trustee "${v.user}" -AccessRights SendAs -Confirm:$false`;
+                            }
+                            return cmd;
+                        }
+                    },
+                    {
+                        id: 'shared-remove-member',
+                        name: 'הסרת חבר',
+                        cmd: 'Remove-MailboxPermission',
+                        fields: [
+                            { id: 'mailbox', label: 'תיבה משותפת', placeholder: 'shared@domain.com', required: true },
+                            { id: 'user', label: 'משתמש להסרה', placeholder: 'user@domain.com', required: true }
+                        ],
+                        generate: (v) => `# הסרת Full Access\nRemove-MailboxPermission -Identity "${v.mailbox}" -User "${v.user}" -AccessRights FullAccess -Confirm:$false\n\n# הסרת Send As\nRemove-RecipientPermission -Identity "${v.mailbox}" -Trustee "${v.user}" -AccessRights SendAs -Confirm:$false`
+                    },
+                    {
+                        id: 'shared-convert',
+                        name: 'המרה לתיבה משותפת',
+                        cmd: 'Set-Mailbox -Type Shared',
+                        fields: [
+                            { id: 'mailbox', label: 'תיבת דואר', placeholder: 'user@domain.com', required: true }
+                        ],
+                        generate: (v) => `Set-Mailbox -Identity "${v.mailbox}" -Type Shared`
+                    }
+                ]
+            },
+            {
+                id: 'distribution',
+                name: 'קבוצות הפצה',
+                icon: '👥',
+                desc: 'ניהול קבוצות הפצה ודיוור',
+                operations: [
+                    {
+                        id: 'dl-create',
+                        name: 'יצירת קבוצת הפצה',
+                        cmd: 'New-DistributionGroup',
+                        fields: [
+                            { id: 'name', label: 'שם הקבוצה', placeholder: 'צוות פיתוח', required: true },
+                            { id: 'alias', label: 'כינוי (Alias)', placeholder: 'dev-team', required: true },
+                            { id: 'email', label: 'כתובת דואר', placeholder: 'dev-team@domain.com', required: true }
+                        ],
+                        generate: (v) => `New-DistributionGroup -Name "${v.name}" -Alias "${v.alias}" -PrimarySmtpAddress "${v.email}" -Type Distribution`
+                    },
+                    {
+                        id: 'dl-add-member',
+                        name: 'הוספת חבר לקבוצה',
+                        cmd: 'Add-DistributionGroupMember',
+                        fields: [
+                            { id: 'group', label: 'שם/כתובת הקבוצה', placeholder: 'dev-team@domain.com', required: true },
+                            { id: 'member', label: 'חבר להוספה', placeholder: 'user@domain.com', required: true }
+                        ],
+                        generate: (v) => `Add-DistributionGroupMember -Identity "${v.group}" -Member "${v.member}"`
+                    },
+                    {
+                        id: 'dl-remove-member',
+                        name: 'הסרת חבר מקבוצה',
+                        cmd: 'Remove-DistributionGroupMember',
+                        fields: [
+                            { id: 'group', label: 'שם/כתובת הקבוצה', placeholder: 'dev-team@domain.com', required: true },
+                            { id: 'member', label: 'חבר להסרה', placeholder: 'user@domain.com', required: true }
+                        ],
+                        generate: (v) => `Remove-DistributionGroupMember -Identity "${v.group}" -Member "${v.member}" -Confirm:$false`
+                    },
+                    {
+                        id: 'dl-get-members',
+                        name: 'צפייה בחברי קבוצה',
+                        cmd: 'Get-DistributionGroupMember',
+                        fields: [
+                            { id: 'group', label: 'שם/כתובת הקבוצה', placeholder: 'dev-team@domain.com', required: true }
+                        ],
+                        generate: (v) => `Get-DistributionGroupMember -Identity "${v.group}" | Select-Object DisplayName, PrimarySmtpAddress`
+                    }
+                ]
+            },
+            {
+                id: 'licenses',
+                name: 'רישיונות',
+                icon: '🔑',
+                desc: 'הקצאה והסרה של רישיונות',
+                operations: [
+                    {
+                        id: 'lic-list',
+                        name: 'רשימת רישיונות זמינים',
+                        cmd: 'Get-MgSubscribedSku',
+                        fields: [],
+                        generate: () => `Get-MgSubscribedSku | Select-Object SkuPartNumber, ConsumedUnits, @{N="Total";E={$_.PrepaidUnits.Enabled}} | Format-Table -AutoSize`
+                    },
+                    {
+                        id: 'lic-user',
+                        name: 'צפייה ברישיונות משתמש',
+                        cmd: 'Get-MgUserLicenseDetail',
+                        fields: [
+                            { id: 'user', label: 'משתמש', placeholder: 'user@domain.com', required: true }
+                        ],
+                        generate: (v) => `Get-MgUserLicenseDetail -UserId "${v.user}" | Select-Object SkuPartNumber`
+                    },
+                    {
+                        id: 'lic-assign',
+                        name: 'הקצאת רישיון',
+                        cmd: 'Set-MgUserLicense',
+                        fields: [
+                            { id: 'user', label: 'משתמש', placeholder: 'user@domain.com', required: true },
+                            { id: 'sku', label: 'SKU Id של הרישיון', placeholder: '05e9a617-0261-4cee-bb44-138d3ef5d965', required: true, hint: 'הרץ "רשימת רישיונות זמינים" כדי לקבל את ה-SKU' }
+                        ],
+                        generate: (v) => `Set-MgUserLicense -UserId "${v.user}" -AddLicenses @{SkuId="${v.sku}"} -RemoveLicenses @()`
+                    },
+                    {
+                        id: 'lic-remove',
+                        name: 'הסרת רישיון',
+                        cmd: 'Set-MgUserLicense',
+                        fields: [
+                            { id: 'user', label: 'משתמש', placeholder: 'user@domain.com', required: true },
+                            { id: 'sku', label: 'SKU Id של הרישיון', placeholder: '05e9a617-0261-4cee-bb44-138d3ef5d965', required: true }
+                        ],
+                        generate: (v) => `Set-MgUserLicense -UserId "${v.user}" -AddLicenses @() -RemoveLicenses @("${v.sku}")`
+                    }
+                ]
+            },
+            {
+                id: 'users',
+                name: 'ניהול משתמשים',
+                icon: '👤',
+                desc: 'יצירה, חסימה, איפוס סיסמה',
+                operations: [
+                    {
+                        id: 'user-create',
+                        name: 'יצירת משתמש חדש',
+                        cmd: 'New-MgUser',
+                        fields: [
+                            { id: 'display', label: 'שם תצוגה', placeholder: 'ישראל ישראלי', required: true },
+                            { id: 'upn', label: 'שם משתמש (UPN)', placeholder: 'israel@domain.com', required: true },
+                            { id: 'password', label: 'סיסמה ראשונית', placeholder: 'P@ssw0rd123!', required: true },
+                            {
+                                id: 'forceChange', label: 'חייב לשנות סיסמה', type: 'select', required: true, options: [
+                                    { value: '$true', label: 'כן' },
+                                    { value: '$false', label: 'לא' }
+                                ]
+                            }
+                        ],
+                        generate: (v) => `$PasswordProfile = @{\n    Password = "${v.password}"\n    ForceChangePasswordNextSignIn = ${v.forceChange}\n}\n\nNew-MgUser -DisplayName "${v.display}" -UserPrincipalName "${v.upn}" -PasswordProfile $PasswordProfile -AccountEnabled $true -MailNickname "${v.upn.split('@')[0] || 'user'}"`
+                    },
+                    {
+                        id: 'user-block',
+                        name: 'חסימת משתמש',
+                        cmd: 'Update-MgUser',
+                        fields: [
+                            { id: 'user', label: 'משתמש', placeholder: 'user@domain.com', required: true }
+                        ],
+                        generate: (v) => `# חסימת כניסה\nUpdate-MgUser -UserId "${v.user}" -AccountEnabled:$false\n\n# ביטול כל הסשנים הפעילים\nRevoke-MgUserSignInSession -UserId "${v.user}"`
+                    },
+                    {
+                        id: 'user-unblock',
+                        name: 'ביטול חסימה',
+                        cmd: 'Update-MgUser',
+                        fields: [
+                            { id: 'user', label: 'משתמש', placeholder: 'user@domain.com', required: true }
+                        ],
+                        generate: (v) => `Update-MgUser -UserId "${v.user}" -AccountEnabled:$true`
+                    },
+                    {
+                        id: 'user-reset-pw',
+                        name: 'איפוס סיסמה',
+                        cmd: 'Update-MgUser',
+                        fields: [
+                            { id: 'user', label: 'משתמש', placeholder: 'user@domain.com', required: true },
+                            { id: 'password', label: 'סיסמה חדשה', placeholder: 'NewP@ss123!', required: true },
+                            {
+                                id: 'forceChange', label: 'חייב לשנות סיסמה', type: 'select', required: true, options: [
+                                    { value: '$true', label: 'כן' },
+                                    { value: '$false', label: 'לא' }
+                                ]
+                            }
+                        ],
+                        generate: (v) => `$PasswordProfile = @{\n    Password = "${v.password}"\n    ForceChangePasswordNextSignIn = ${v.forceChange}\n}\n\nUpdate-MgUser -UserId "${v.user}" -PasswordProfile $PasswordProfile`
+                    },
+                    {
+                        id: 'user-get-info',
+                        name: 'פרטי משתמש',
+                        cmd: 'Get-MgUser',
+                        fields: [
+                            { id: 'user', label: 'משתמש', placeholder: 'user@domain.com', required: true }
+                        ],
+                        generate: (v) => `Get-MgUser -UserId "${v.user}" -Property DisplayName,UserPrincipalName,AccountEnabled,AssignedLicenses,CreatedDateTime | Format-List`
+                    }
+                ]
+            }
+        ];
+
+        // ===== State =====
+        let activeCategory = null;
+        let activeOperation = null;
+
+        // ===== Render Sidebar =====
+        function renderSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const title = sidebar.querySelector('.sidebar-title');
+
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'category-btn';
+                btn.id = `cat-${cat.id}`;
+                btn.innerHTML = `
+                    <span class="cat-icon">${cat.icon}</span>
+                    <span>${cat.name}</span>
+                    <span class="cat-count">${cat.operations.length}</span>
+                `;
+                btn.addEventListener('click', () => selectCategory(cat.id));
+                sidebar.appendChild(btn);
+            });
+        }
+
+        // ===== Select Category =====
+        function selectCategory(catId) {
+            activeCategory = catId;
+            activeOperation = null;
+
+            // Update sidebar active state
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`cat-${catId}`).classList.add('active');
+
+            const cat = categories.find(c => c.id === catId);
+            const main = document.getElementById('mainContent');
+
+            main.innerHTML = `
+                <div class="operations-section">
+                    <div class="section-header">
+                        <div class="sec-icon">${cat.icon}</div>
+                        <div>
+                            <h2>${cat.name}</h2>
+                            <div class="sec-desc">${cat.desc}</div>
+                        </div>
+                    </div>
+                    <div class="ops-grid" id="opsGrid">
+                        ${cat.operations.map(op => `
+                            <div class="op-card" id="op-${op.id}" onclick="selectOperation('${cat.id}', '${op.id}')">
+                                <div class="op-name">${op.name}</div>
+                                <div class="op-cmd">${op.cmd}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div id="formArea"></div>
+                <div id="outputArea"></div>
+            `;
+        }
+
+        // ===== Select Operation =====
+        function selectOperation(catId, opId) {
+            const cat = categories.find(c => c.id === catId);
+            const op = cat.operations.find(o => o.id === opId);
+            activeOperation = opId;
+
+            // Update op card active state
+            document.querySelectorAll('.op-card').forEach(c => c.classList.remove('active'));
+            document.getElementById(`op-${opId}`).classList.add('active');
+
+            const formArea = document.getElementById('formArea');
+            const outputArea = document.getElementById('outputArea');
+
+            // Handle bulk calendar operation
+            if (op.bulk) {
+                renderBulkCalendarForm(formArea, outputArea);
+                return;
+            }
+
+            if (op.fields.length === 0) {
+                // No fields needed, generate immediately
+                formArea.innerHTML = '';
+                renderOutput(outputArea, op.generate({}));
+                return;
+            }
+
+            formArea.innerHTML = `
+                <div class="form-panel">
+                    <div class="form-title">${op.name}</div>
+                    <div class="form-subtitle">${op.cmd}</div>
+                    <div class="form-grid">
+                        ${op.fields.map(f => {
+                if (f.type === 'select') {
+                    return `
+                                    <div class="form-group">
+                                        <label for="field-${f.id}">${f.label}${f.required ? ' *' : ''}</label>
+                                        <select id="field-${f.id}" data-field="${f.id}">
+                                            ${f.options.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}
+                                        </select>
+                                        ${f.hint ? `<span class="hint">${f.hint}</span>` : ''}
+                                    </div>
+                                `;
+                }
+                return `
+                                <div class="form-group">
+                                    <label for="field-${f.id}">${f.label}${f.required ? ' *' : ''}</label>
+                                    <input type="text" id="field-${f.id}" data-field="${f.id}" placeholder="${f.placeholder || ''}" />
+                                    ${f.hint ? `<span class="hint">${f.hint}</span>` : ''}
+                                </div>
+                            `;
+            }).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Set up live generation
+            const inputs = formArea.querySelectorAll('input, select');
+            const updateOutput = () => {
+                const values = {};
+                let allRequired = true;
+                op.fields.forEach(f => {
+                    const el = document.getElementById(`field-${f.id}`);
+                    values[f.id] = el ? el.value.trim() : '';
+                    if (f.required && !values[f.id]) allRequired = false;
+                });
+
+                if (allRequired) {
+                    renderOutput(outputArea, op.generate(values));
+                } else {
+                    outputArea.innerHTML = `
+                        <div class="output-panel">
+                            <div class="output-placeholder">📝 מלא את כל השדות הנדרשים כדי ליצור את הפקודה</div>
+                        </div>
+                    `;
+                }
+            };
+
+            inputs.forEach(input => {
+                input.addEventListener('input', updateOutput);
+                input.addEventListener('change', updateOutput);
+            });
+
+            updateOutput();
+        }
+
+        // ===== Bulk Calendar Permission Form =====
+        function renderBulkCalendarForm(formArea, outputArea) {
+            let mailboxCount = 2;
+
+            function buildForm() {
+                let mailboxRows = '';
+                for (let i = 1; i <= mailboxCount; i++) {
+                    mailboxRows += `
+                        <div class="bulk-row" id="bulk-row-${i}">
+                            <span class="row-num">${i}</span>
+                            <input type="text" id="bulk-mbx-${i}" class="bulk-mbx-input" placeholder="user${i}@domain.com" />
+                            ${mailboxCount > 1 ? `<button type="button" class="bulk-remove-btn" onclick="removeBulkRow(${i})" title="הסר">✕</button>` : ''}
+                        </div>
+                    `;
+                }
+
+                formArea.innerHTML = `
+                    <div class="form-panel">
+                        <div class="form-title">הרשאה ליומנים מרובים</div>
+                        <div class="form-subtitle">Add-MailboxFolderPermission (Bulk)</div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="bulk-user">משתמש מורשה (למשל מזכירה) *</label>
+                                <input type="text" id="bulk-user" placeholder="secretary@domain.com" />
+                                <span class="hint">המשתמש שיקבל גישה לכל היומנים</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="bulk-access">רמת הרשאה *</label>
+                                <select id="bulk-access">
+                                    <option value="">-- בחר --</option>
+                                    <option value="Reviewer">Reviewer - צפייה בלבד</option>
+                                    <option value="Editor">Editor - עריכה</option>
+                                    <option value="Author">Author - יצירה ועריכת פריטים שלו</option>
+                                    <option value="PublishingEditor">Publishing Editor - עריכה + תיקיות משנה</option>
+                                    <option value="Owner">Owner - בעלות מלאה</option>
+                                    <option value="AvailabilityOnly">AvailabilityOnly - פנוי/תפוס בלבד</option>
+                                    <option value="LimitedDetails">LimitedDetails - נושא ומיקום</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="bulk-list-label">בעלי יומנים (תיבות דואר) *</div>
+                        <div class="bulk-list" id="bulkList">
+                            ${mailboxRows}
+                        </div>
+                        <button type="button" class="bulk-add-btn" onclick="addBulkRow()">
+                            <span>+</span>
+                            <span>הוסף תיבת דואר נוספת</span>
+                        </button>
+                        <div class="bulk-counter" id="bulkCounter">${mailboxCount} תיבות דואר</div>
+                    </div>
+                `;
+
+                // Re-bind events
+                bindBulkEvents();
+            }
+
+            function bindBulkEvents() {
+                const allInputs = formArea.querySelectorAll('input, select');
+                allInputs.forEach(el => {
+                    el.addEventListener('input', updateBulkOutput);
+                    el.addEventListener('change', updateBulkOutput);
+                });
+            }
+
+            function updateBulkOutput() {
+                const user = document.getElementById('bulk-user')?.value.trim();
+                const access = document.getElementById('bulk-access')?.value;
+                const mailboxes = [];
+                for (let i = 1; i <= mailboxCount; i++) {
+                    const el = document.getElementById(`bulk-mbx-${i}`);
+                    if (el) {
+                        const val = el.value.trim();
+                        if (val) mailboxes.push(val);
+                    }
+                }
+
+                if (user && access && mailboxes.length > 0) {
+                    const lines = [`# הוספת הרשאת ${access} ליומנים מרובים עבור ${user}`, ''];
+                    mailboxes.forEach((mbx, idx) => {
+                        lines.push(`# ${idx + 1}. ${mbx}`);
+                        lines.push(`Add-MailboxFolderPermission -Identity "${mbx}:\\Calendar" -User "${user}" -AccessRights ${access}`);
+                        if (idx < mailboxes.length - 1) lines.push('');
+                    });
+                    renderOutput(outputArea, lines.join('\n'));
+                } else {
+                    outputArea.innerHTML = `
+                        <div class="output-panel">
+                            <div class="output-placeholder">📝 הזן את פרטי המשתמש המורשה, בחר הרשאה, והוסף לפחות תיבת דואר אחת</div>
+                        </div>
+                    `;
+                }
+            }
+
+            // Expose functions globally for onclick handlers
+            window.addBulkRow = function () {
+                mailboxCount++;
+                const list = document.getElementById('bulkList');
+                const row = document.createElement('div');
+                row.className = 'bulk-row';
+                row.id = `bulk-row-${mailboxCount}`;
+                row.innerHTML = `
+                    <span class="row-num">${mailboxCount}</span>
+                    <input type="text" id="bulk-mbx-${mailboxCount}" class="bulk-mbx-input" placeholder="user${mailboxCount}@domain.com" />
+                    <button type="button" class="bulk-remove-btn" onclick="removeBulkRow(${mailboxCount})" title="הסר">✕</button>
+                `;
+                list.appendChild(row);
+                document.getElementById('bulkCounter').textContent = `${mailboxCount} תיבות דואר`;
+                // Bind new input
+                const newInput = row.querySelector('input');
+                newInput.addEventListener('input', updateBulkOutput);
+                newInput.focus();
+                updateBulkOutput();
+            };
+
+            window.removeBulkRow = function (idx) {
+                const row = document.getElementById(`bulk-row-${idx}`);
+                if (row) row.remove();
+                // Update counter — count remaining rows
+                const remaining = document.querySelectorAll('.bulk-row').length;
+                document.getElementById('bulkCounter').textContent = `${remaining} תיבות דואר`;
+                // Re-number rows
+                document.querySelectorAll('.bulk-row').forEach((r, i) => {
+                    const num = r.querySelector('.row-num');
+                    if (num) num.textContent = i + 1;
+                });
+                updateBulkOutput();
+            };
+
+            buildForm();
+            updateBulkOutput();
+        }
+
+        // ===== Render Command Output =====
+        function renderOutput(container, command) {
+            const highlighted = highlightPS(command);
+            container.innerHTML = `
+                <div class="output-panel">
+                    <div class="output-header">
+                        <div class="output-label">
+                            <span>פקודה מוכנה</span>
+                            <span class="ps-badge">PowerShell</span>
+                        </div>
+                        <button class="copy-btn" id="copyBtn" onclick="copyCommand()">
+                            <span>📋</span>
+                            <span>העתק</span>
+                        </button>
+                    </div>
+                    <div class="output-code" id="outputCode">${highlighted}</div>
+                </div>
+            `;
+            // Store raw command for copying
+            container.dataset.rawCommand = command;
+        }
+
+        // ===== Syntax Highlighting =====
+        function highlightPS(cmd) {
+            return cmd
+                // Comments
+                .replace(/(#[^\n]*)/g, '<span class="comment">$1</span>')
+                // Parameter names
+                .replace(/(-\w+)/g, '<span class="param-name">$1</span>')
+                // Strings in quotes
+                .replace(/"([^"]*)"/g, '"<span class="param-value">$1</span>"')
+                // Cmdlet names (Verb-Noun pattern)
+                .replace(/\b([A-Z][a-z]+(?:-[A-Z][a-zA-Z]+)+)\b/g, '<span class="cmd-name">$1</span>')
+                // Variables
+                .replace(/(\$\w+)/g, '<span class="param-value">$1</span>');
+        }
+
+        // ===== Copy to Clipboard =====
+        function copyCommand() {
+            const raw = document.getElementById('outputArea').dataset.rawCommand;
+            navigator.clipboard.writeText(raw).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.classList.add('copied');
+                btn.innerHTML = '<span>✓</span><span>הועתק!</span>';
+
+                const toast = document.getElementById('toast');
+                toast.classList.add('show');
+
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = '<span>📋</span><span>העתק</span>';
+                    toast.classList.remove('show');
+                }, 2000);
+            });
+        }
+
+        // ===== Init =====
+        renderSidebar();
+    </script>
+</body>
+
+</html>
